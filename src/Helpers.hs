@@ -1,6 +1,7 @@
 module Helpers
   ( readInts
   , readCommaSeparatedInts
+  , readCommaSeparatedStrings
   , setNth
   )
 where
@@ -19,6 +20,9 @@ readInts filePath =
 
 readCommaSeparatedInts :: String -> [Int]
 readCommaSeparatedInts = map read . splitOn ","
+
+readCommaSeparatedStrings :: String -> [String]
+readCommaSeparatedStrings = splitOn ","
 
 setNth :: Int -> a -> [a] -> [a]
 setNth = set' 0
