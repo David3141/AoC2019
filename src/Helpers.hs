@@ -13,16 +13,19 @@ readInts :: FilePath -> IO [Int]
 readInts filePath =
   map read . lines <$> (readFile =<< getDataFileName filePath)
 
-readCommaSeparatedInts :: FilePath -> IO [Int]
-readCommaSeparatedInts filePath =
-  map read . splitOn "," <$> (readFile =<< getDataFileName filePath)
+-- readCommaSeparatedInts :: FilePath -> IO [Int]
+-- readCommaSeparatedInts filePath =
+--   map read . splitOn "," <$> (readFile =<< getDataFileName filePath)
+
+readCommaSeparatedInts :: String -> [Int]
+readCommaSeparatedInts = map read . splitOn ","
 
 setNth :: Int -> a -> [a] -> [a]
-setNth ind new arr = set' ind 0 new arr
+setNth = set' 0
  where
   set' :: Int -> Int -> a -> [a] -> [a]
   set' _ _ _ [] = []
-  set' ind curr new arr@(x : xs)
+  set' curr ind new arr@(x : xs)
     | curr > ind  = arr
-    | ind == curr = new : (set' ind (curr + 1) new xs)
-    | otherwise   = x : (set' ind (curr + 1) new xs)
+    | ind == curr = new : set' (curr + 1) ind new xs
+    | otherwise   = x : set' (curr + 1) ind new xs

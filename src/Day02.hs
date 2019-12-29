@@ -4,35 +4,53 @@ module Day02
   )
 where
 
+import           Paths_advent_of_code
 import           Helpers                        ( readCommaSeparatedInts
                                                 , setNth
                                                 )
 
 
 part1 :: IO Int
-part1 = head . runPrograms 0 . setNth 2 2 . setNth 1 12 <$> programNumbers
- where
-  runPrograms :: Int -> [Int] -> [Int]
-  runPrograms index list
-    | list !! index == 99 = list
-    | otherwise           = runPrograms (index + 4) (runProgram index list)
+part1 = execProgram . prepareIntCodes 12 2 <$> readIntCodes
 
 
 part2 :: IO Int
-part2 = return 0
+part2 = do
+  intCodes <- readIntCodes
+
+  let checkNounVerb (noun, verb) =
+        execProgram (prepareIntCodes noun verb intCodes) == 19690720
+
+  let (noun, verb) =
+        head $ filter checkNounVerb [ (i, j) | i <- [0 .. 99], j <- [0 .. 99] ]
 
 
-programNumbers :: IO [Int]
-programNumbers = readCommaSeparatedInts "inputs/day02.txt"
+  return $ 100 * noun + verb
 
 
-runProgram :: Int -> [Int] -> [Int]
-runProgram index list = setNth targetIndex newVal list
+readIntCodes :: IO [Int]
+readIntCodes =
+  readCommaSeparatedInts <$> (readFile =<< getDataFileName "inputs/day02.txt")
+
+
+prepareIntCodes :: Int -> Int -> [Int] -> [Int]
+prepareIntCodes noun verb = setNth 1 noun . setNth 2 verb
+
+
+execProgram :: [Int] -> Int
+execProgram = head . run 0
  where
-  program     = list !! index
+  run index list | list !! index == 99 = list
+                 | otherwise = run (index + 4) (execOpcodeAt index list)
+
+
+execOpcodeAt :: Int -> [Int] -> [Int]
+execOpcodeAt index list = setNth targetIndex newVal list
+ where
+  opcode      = list !! index
   a           = list !! (list !! (index + 1))
   b           = list !! (list !! (index + 2))
   targetIndex = list !! (index + 3)
-  newVal      = case program of
+  newVal      = case opcode of
     1 -> a + b
     2 -> a * b
