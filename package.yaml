@@ -22,14 +22,13 @@ description:         Please see the README on GitHub at <https://github.com/davi
 dependencies:
 - base >= 4.7 && < 5
 - containers
-- ordered-containers
 - split
+- timeit
 
 library:
   source-dirs: src
 
 data-files:
-  - inputs/*/*.txt
   - inputs/*.txt
 
 other-modules: Paths_advent-of-code
