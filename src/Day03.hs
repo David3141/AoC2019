@@ -4,6 +4,8 @@ module Day03
   )
 where
 
+import Control.Monad (liftM2)
+import Data.Maybe (fromMaybe)
 import qualified Data.Set                      as Set
 import           Data.Set                       ( Set )
 import qualified Data.Sequence                 as Seq
@@ -33,7 +35,14 @@ part1 = do
 
 
 part2 :: IO Int
-part2 = return 0
+part2 = do
+  (pathA, pathB) <- readPaths
+
+  let intersections = intersectionSet pathA pathB
+  let minimumDistance =
+        minimum . Set.map (wireDistance pathA pathB) $ intersections
+
+  return minimumDistance
 
 
 readPaths :: IO (Path, Path)
@@ -76,6 +85,16 @@ pathFromInstructions instructions = pathWithoutStartingNode
 manhattanDistance :: Node -> Node -> Int
 manhattanDistance (startX, startY) (x, y) =
   (abs x - abs startX) + (abs y - abs startY)
+
+
+wireDistance :: Path -> Path -> Node -> Int
+wireDistance pathA pathB intersection =
+  -- Add 2 because we're working with two indices starting from 0
+  2 + fromMaybe (error "Something went wrong") distance
+ where
+  distanceA = Seq.elemIndexL intersection pathA
+  distanceB = Seq.elemIndexL intersection pathB
+  distance = liftM2 (+) distanceA distanceB
 
 
 lastElem :: Seq a -> a
