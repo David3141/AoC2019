@@ -2,7 +2,7 @@ module Main where
 
 import           Control.Monad                  ( mapM_ )
 import           System.Environment             ( getArgs )
-import           System.TimeIt (timeIt, timeItNamed)
+import           System.TimeIt                  ( timeIt )
 
 import           Day01
 import           Day02
