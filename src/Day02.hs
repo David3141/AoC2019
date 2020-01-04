@@ -9,6 +9,9 @@ import           Helpers                        ( readCommaSeparatedInts
                                                 , setNth
                                                 )
 
+import qualified Data.Sequence                 as Seq
+import           Data.Sequence                  ( Seq )
+
 
 part1 :: IO Int
 part1 = execProgram . prepareIntCodes 12 2 <$> readIntCodes
@@ -18,39 +21,45 @@ part2 :: IO Int
 part2 = do
   intCodes <- readIntCodes
 
-  let checkNounVerb (noun, verb) =
-        execProgram (prepareIntCodes noun verb intCodes) == 19690720
-
-  let (noun, verb) =
-        head $ filter checkNounVerb [ (i, j) | i <- [0 .. 99], j <- [0 .. 99] ]
-
+  let (noun, verb) = head
+        [ (noun, verb)
+        | noun <- [0 .. 99]
+        , verb <- [0 .. 99]
+        , execProgram (prepareIntCodes noun verb intCodes) == 19690720
+        ]
 
   return $ 100 * noun + verb
 
 
-readIntCodes :: IO [Int]
+readIntCodes :: IO (Seq Int)
 readIntCodes =
-  readCommaSeparatedInts <$> (readFile =<< getDataFileName "inputs/day02.txt")
+  Seq.fromList
+    .   readCommaSeparatedInts
+    <$> (readFile =<< getDataFileName "inputs/day02.txt")
 
 
-prepareIntCodes :: Int -> Int -> [Int] -> [Int]
-prepareIntCodes noun verb = setNth 1 noun . setNth 2 verb
+prepareIntCodes :: Int -> Int -> Seq Int -> Seq Int
+prepareIntCodes noun verb = Seq.update 1 noun . Seq.update 2 verb
 
 
-execProgram :: [Int] -> Int
-execProgram = head . run 0
+execProgram :: Seq Int -> Int
+execProgram = (`at` 0) . run 0
  where
-  run index list | list !! index == 99 = list
-                 | otherwise = run (index + 4) (execOpcodeAt index list)
+  run index seq | seq `at` index == 99 = seq
+                | otherwise = run (index + 4) (execOpcodeAt index seq)
 
 
-execOpcodeAt :: Int -> [Int] -> [Int]
-execOpcodeAt index list = setNth targetIndex newVal list
+execOpcodeAt :: Int -> Seq Int -> Seq Int
+execOpcodeAt index seq = Seq.update targetIndex newVal seq
  where
-  opcode      = list !! index
-  a           = list !! (list !! (index + 1))
-  b           = list !! (list !! (index + 2))
-  targetIndex = list !! (index + 3)
+  opcode      = seq `at` index
+  a           = seq `at` (seq `at` (index + 1))
+  b           = seq `at` (seq `at` (index + 2))
+  targetIndex = seq `at` (index + 3)
   newVal      = case opcode of
     1 -> a + b
     2 -> a * b
+
+
+at :: Seq a -> Int -> a
+at = Seq.index
