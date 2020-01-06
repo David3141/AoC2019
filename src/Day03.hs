@@ -6,6 +6,7 @@ where
 
 import Control.Monad (liftM2)
 import Data.Maybe (fromMaybe)
+import           Data.List                      ( foldl' )
 import qualified Data.Set                      as Set
 import           Data.Set                       ( Set )
 import qualified Data.Sequence                 as Seq
@@ -76,7 +77,7 @@ pathFromInstruction (startX, startY) (direction : strDistance) = Seq.zip xs ys
 pathFromInstructions :: [PathInstruction] -> Path
 pathFromInstructions instructions = pathWithoutStartingNode
  where
-  (_ :<| pathWithoutStartingNode) = foldl
+  (_ :<| pathWithoutStartingNode) = foldl'
     (\acc curr -> acc >< pathFromInstruction (lastElem acc) curr)
     (Seq.singleton (0, 0))
     instructions
