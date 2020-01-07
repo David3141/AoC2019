@@ -5,9 +5,9 @@ module Day02
 where
 
 import           Paths_advent_of_code
-import qualified Computer                      as C
+import qualified Computer.Computer             as C
+import           Computer.IntCode               ( readIntCode )
 import           Helpers                        ( readCommaSeparatedInts
-                                                , setNth
                                                 )
 
 import qualified Data.Sequence                 as Seq
@@ -16,12 +16,12 @@ import           Data.Sequence                  ( Seq )
 
 part1 :: IO Int
 part1 =
-  C.runNounVerb 12 2 <$> C.readIntCodes "inputs/day02.txt"
+  C.runNounVerb 12 2 <$> readIntCode "inputs/day02.txt"
 
 
 part2 :: IO Int
 part2 = do
-  intCodes <- C.readIntCodes "inputs/day02.txt"
+  intCodes <- readIntCode "inputs/day02.txt"
 
   let (noun, verb) = head
         [ (noun, verb)

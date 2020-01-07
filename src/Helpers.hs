@@ -2,7 +2,6 @@ module Helpers
   ( readInts
   , readCommaSeparatedInts
   , readCommaSeparatedStrings
-  , setNth
   )
 where
 
@@ -23,13 +22,3 @@ readCommaSeparatedInts = map read . splitOn ","
 
 readCommaSeparatedStrings :: String -> [String]
 readCommaSeparatedStrings = splitOn ","
-
-setNth :: Int -> a -> [a] -> [a]
-setNth = set' 0
- where
-  set' :: Int -> Int -> a -> [a] -> [a]
-  set' _ _ _ [] = []
-  set' curr ind new arr@(x : xs)
-    | curr > ind  = arr
-    | ind == curr = new : set' (curr + 1) ind new xs
-    | otherwise   = x : set' (curr + 1) ind new xs
