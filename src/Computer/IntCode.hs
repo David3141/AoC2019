@@ -2,6 +2,7 @@ module Computer.IntCode
   ( IntCode
   , at
   , readIntCode
+  , takeNAt
   , withNounAndVerb
   )
 where
@@ -28,3 +29,7 @@ withNounAndVerb noun verb = Seq.update 1 noun . Seq.update 2 verb
 
 at :: IntCode -> Int -> Int
 at = Seq.index
+
+
+takeNAt :: Int -> Int -> IntCode -> IntCode
+takeNAt count index = Seq.take count . Seq.drop index
