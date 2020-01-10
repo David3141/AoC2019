@@ -3,6 +3,7 @@ module Computer.IntCode
   , at
   , readIntCode
   , takeNAt
+  , updateAt
   , withNounAndVerb
   )
 where
@@ -33,3 +34,7 @@ at = Seq.index
 
 takeNAt :: Int -> Int -> IntCode -> IntCode
 takeNAt count index = Seq.take count . Seq.drop index
+
+
+updateAt :: Int -> Int -> IntCode -> IntCode
+updateAt = Seq.update

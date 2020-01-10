@@ -6,7 +6,7 @@ where
 
 import           Paths_advent_of_code
 import qualified Computer.Computer             as C
-import           Computer.IntCode               ( readIntCode )
+import           Computer.IntCode               ( readIntCode, at )
 import           Helpers                        ( readCommaSeparatedInts
                                                 )
 
@@ -16,7 +16,7 @@ import           Data.Sequence                  ( Seq )
 
 part1 :: IO Int
 part1 =
-  C.runNounVerb 12 2 <$> readIntCode "inputs/day02.txt"
+  (`at` 0 ) . C.runNounVerb 12 2 <$> readIntCode "inputs/day02.txt"
 
 
 part2 :: IO Int
@@ -27,7 +27,7 @@ part2 = do
         [ (noun, verb)
         | noun <- [0 .. 99]
         , verb <- [0 .. 99]
-        , C.runNounVerb noun verb intCodes == 19690720
+        , (== 19690720) . (`at` 0) . C.runNounVerb noun verb $ intCodes
         ]
 
   return $ 100 * noun + verb
