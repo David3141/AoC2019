@@ -27,33 +27,45 @@ data OpCode = Addition
             | Halt
             deriving (Show, Eq)
 
-data ParameterMode = Position
-                   | Immediate
-                   deriving Show
+data ParameterMode = Position | Immediate deriving Show
 
 type Operation = [(ParameterMode, Int)] -> IntCode -> IntCode
 
-run :: IntCode -> IntCode
-run = execOpcodeAt 0
+
+toParamMode :: Int -> ParameterMode
+toParamMode 0 = Position
+toParamMode 1 = Immediate
 
 
-runNounVerb :: Int -> Int -> IntCode -> IntCode
+toOpCode :: Int -> OpCode
+toOpCode 1  = Addition
+toOpCode 2  = Multiplication
+toOpCode 3  = Input
+toOpCode 4  = Output
+toOpCode 99 = Halt
+
+
+run :: IntCode -> (IntCode, [Int])
+run = execOpcodeAt 0 []
+
+
+runNounVerb :: Int -> Int -> IntCode -> (IntCode, [Int])
 runNounVerb noun verb = run . withNounAndVerb noun verb
 
 
-execOpcodeAt :: Int -> IntCode -> IntCode
-execOpcodeAt index intCode | opcode == Halt = intCode
-                           | otherwise = execOpcodeAt nextIndex updatedIntCode
+execOpcodeAt :: Int -> [Int] -> IntCode -> (IntCode, [Int])
+execOpcodeAt index outputList intCode
+  | opcode == Halt = (intCode, outputList)
+  | otherwise      = execOpcodeAt nextIndex updatedOutputList updatedIntCode
  where
   (rawInstruction :<| args) = takeNAt 4 index intCode
   (opcode, paramModes)      = parseInstruction rawInstruction
-  paramsWithModes           = zipPadded paramModes (toList args)
+  paramsWithModes           = zip paramModes (toList args)
+  (operation, nextIndex)    = operationAndNextIndex opcode index
 
-  (operation, nextIndex)    = case opcode of
-    Addition       -> (execBasicUpdate (+), index + 4)
-    Multiplication -> (execBasicUpdate (*), index + 4)
-    Input          -> (execInput, index + 2)
-    Output         -> (\_ _ -> intCode, index + 2)
+  updatedOutputList = case opcode of
+    Output -> execOutput paramsWithModes intCode outputList
+    _      -> outputList
 
   updatedIntCode = operation paramsWithModes intCode
 
@@ -64,26 +76,15 @@ zipPadded (mode : modes) (num : nums) = (mode, num) : zipPadded modes nums
 
 
 parseInstruction :: Int -> (OpCode, [ParameterMode])
-parseInstruction = read' . reverse . show
+parseInstruction num = (opCode, paramModes)
  where
-  read' :: String -> (OpCode, [ParameterMode])
-  read' [x           ] = (charsToOpcode ('0', x), [])
-  read' (x : y : rest) = (charsToOpcode (y, x), map charToMode rest)
-
-  charsToOpcode :: (Char, Char) -> OpCode
-  charsToOpcode (_  , '1') = Addition
-  charsToOpcode (_  , '2') = Multiplication
-  charsToOpcode (_  , '3') = Input
-  charsToOpcode (_  , '4') = Output
-  charsToOpcode ('9', '9') = Halt
-
-  charToMode :: Char -> ParameterMode
-  charToMode '0' = Position
-  charToMode '1' = Immediate
+  opCode     = toOpCode (num `rem` 100)
+  paramModes = map
+    toParamMode
+    [num `div` 100 `rem` 10, num `div` 1000 `rem` 10, num `div` 10000 `rem` 10]
 
 
-execBasicUpdate
-  :: (Int -> Int -> Int) -> Operation
+execBasicUpdate :: (Int -> Int -> Int) -> Operation
 execBasicUpdate basicOp [(modeA, a), (modeB, b), (_, targetIndex)] intCode =
   updateAt targetIndex (basicOp a' b') intCode
  where
@@ -96,4 +97,20 @@ execBasicUpdate basicOp [(modeA, a), (modeB, b), (_, targetIndex)] intCode =
 
 
 execInput :: Operation
-execInput ((_, targetIndex):_) = updateAt targetIndex 1
+execInput ((_, targetIndex) : _) = updateAt targetIndex 1
+
+
+execOutput :: [(ParameterMode, Int)] -> IntCode -> [Int] -> [Int]
+execOutput ((mode, x) : _) intCode output = val : output
+ where
+  val = case mode of
+    Position  -> intCode `at` x
+    Immediate -> x
+
+
+operationAndNextIndex :: OpCode -> Int -> (Operation, Int)
+operationAndNextIndex opcode index = case opcode of
+    Addition       -> (execBasicUpdate (+), index + 4)
+    Multiplication -> (execBasicUpdate (*), index + 4)
+    Input          -> (execInput, index + 2)
+    Output         -> (\_ intCode -> intCode, index + 2)
