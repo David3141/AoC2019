@@ -24,7 +24,8 @@ part1 =
 
 
 part2 :: IO Int
-part2 = return 0
+part2 =
+    readDiagnosticCode . C.runWithInput 5 <$> readIntCode "inputs/day05.txt"
 
 
 readDiagnosticCode :: (IntCode, [Int]) -> Int
