@@ -11,55 +11,33 @@ import qualified Data.Map.Strict               as Map
 
 import           Paths_advent_of_code
 
+
+type OrbitList = Map String [String]
+
+
 part1 :: IO Int
-part1 = do
-    orbits <- parseOrbits <$> readOrbits
+part1 = countOrbits . parseOrbitList <$> rawOrbits
 
-    print orbits
-    print $ countOrbits "COM" orbits 0 0
-
-
-    return 0
 
 part2 :: IO Int
 part2 = return 0
 
 
-readOrbits :: IO [String]
-readOrbits = lines <$> (readFile =<< getDataFileName "inputs/day06.txt")
--- readOrbits = return testOrbits
+rawOrbits :: IO [String]
+rawOrbits = lines <$> (readFile =<< getDataFileName "inputs/day06.txt")
 
 
-parseOrbits :: [String] -> Map String [String]
-parseOrbits = Map.fromListWith (++) . map ((\[a, b] -> (a, [b])) . splitOn ")")
+parseOrbitList :: [String] -> OrbitList
+parseOrbitList =
+    Map.fromListWith (++) . map ((\[a, b] -> (a, [b])) . splitOn ")")
 
 
-countOrbits :: String -> Map String [String] -> Int -> Int -> Int
-countOrbits nodeName orbits currentLevel currentOrbits =
-    currentOrbits + case Map.lookup nodeName orbits of
-        Just orbitingNodes ->
-            sum
-                . map
-                      (\node -> countOrbits node
-                                            orbits
-                                            (currentLevel + 1)
-                                            (currentOrbits + 1)
-                      )
-                $ orbitingNodes
-        Nothing -> 0
-
-
-
-testOrbits =
-    [ "COM)B"
-    , "B)C"
-    , "C)D"
-    , "D)E"
-    , "E)F"
-    , "B)G"
-    , "G)H"
-    , "D)I"
-    , "E)J"
-    , "J)K"
-    , "K)L"
-    ]
+countOrbits :: OrbitList -> Int
+countOrbits orbitList = countOrbits' 0 "COM"
+  where
+    countOrbits' :: Int -> String -> Int
+    countOrbits' currentOrbits node =
+        currentOrbits + case Map.lookup node orbitList of
+            Just orbitingNodes ->
+                sum . map (countOrbits' (currentOrbits + 1)) $ orbitingNodes
+            Nothing -> 0
