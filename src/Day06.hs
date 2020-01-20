@@ -12,32 +12,58 @@ import qualified Data.Map.Strict               as Map
 import           Paths_advent_of_code
 
 
-type OrbitList = Map String [String]
+type Node = String
+type OrbitTree = Map Node [Node]
 
 
 part1 :: IO Int
-part1 = countOrbits . parseOrbitList <$> rawOrbits
+part1 = countOrbits . parseOrbitTree <$> rawOrbits
 
 
 part2 :: IO Int
-part2 = return 0
+part2 = do
+    tree <- parseOrbitTree <$> rawOrbits
+
+    let ancestorsA = reverse $ ancestorsOf "YOU" tree
+    let ancestorsB = reverse $ ancestorsOf "SAN" tree
+
+    return $ sumLevelsAfterLastCommonAncestor ancestorsA ancestorsB
 
 
 rawOrbits :: IO [String]
 rawOrbits = lines <$> (readFile =<< getDataFileName "inputs/day06.txt")
 
 
-parseOrbitList :: [String] -> OrbitList
-parseOrbitList =
+parseOrbitTree :: [Node] -> OrbitTree
+parseOrbitTree =
     Map.fromListWith (++) . map ((\[a, b] -> (a, [b])) . splitOn ")")
 
 
-countOrbits :: OrbitList -> Int
-countOrbits orbitList = countOrbits' 0 "COM"
+countOrbits :: OrbitTree -> Int
+countOrbits tree = countOrbits' 0 "COM"
   where
-    countOrbits' :: Int -> String -> Int
+    countOrbits' :: Int -> Node -> Int
     countOrbits' currentOrbits node =
-        currentOrbits + case Map.lookup node orbitList of
+        currentOrbits + case Map.lookup node tree of
             Just orbitingNodes ->
                 sum . map (countOrbits' (currentOrbits + 1)) $ orbitingNodes
             Nothing -> 0
+
+
+
+ancestorsOf :: Node -> OrbitTree -> [Node]
+ancestorsOf node tree = case ancestorOf node of
+    Just ancestor -> ancestor : ancestorsOf ancestor tree
+    Nothing       -> []
+  where
+    ancestorOf :: Node -> Maybe Node
+    ancestorOf node =
+        case take 1 . Map.keys . Map.filter (elem node) $ tree of
+            []      -> Nothing
+            (x : _) -> Just x
+
+
+sumLevelsAfterLastCommonAncestor :: [Node] -> [Node] -> Int
+sumLevelsAfterLastCommonAncestor (x : xs) (y : ys) = if x /= y
+    then length (x : xs) + length (y : ys)
+    else sumLevelsAfterLastCommonAncestor xs ys
