@@ -4,11 +4,6 @@ module Day05
     )
 where
 
-import           Data.List                      ( group )
-import           Data.List.Split                ( splitOn )
-import           Data.Sequence                  ( fromList
-                                                , Seq((:|>))
-                                                )
 
 import           Paths_advent_of_code
 import qualified Computer.Computer             as C

@@ -1,6 +1,7 @@
 module Computer.Computer
     ( run
     , runWithInput
+    , runWithInputs
     , runNounVerb
     )
 where
@@ -68,6 +69,10 @@ runNounVerb noun verb = run . withNounAndVerb noun verb
 
 runWithInput :: Int -> IntCode -> (IntCode, Output)
 runWithInput inputVal = execOpcodes 0 (repeat inputVal) []
+
+
+runWithInputs :: Input -> IntCode -> (IntCode, Output)
+runWithInputs inputs = execOpcodes 0 inputs []
 
 
 execOpcodes :: Index -> Input -> Output -> IntCode -> (IntCode, Output)
