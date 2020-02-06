@@ -1,7 +1,6 @@
 module Helpers
   ( readInts
   , readCommaSeparatedInts
-  , readCommaSeparatedStrings
   )
 where
 
@@ -19,6 +18,3 @@ readInts filePath =
 
 readCommaSeparatedInts :: String -> [Int]
 readCommaSeparatedInts = map read . splitOn ","
-
-readCommaSeparatedStrings :: String -> [String]
-readCommaSeparatedStrings = splitOn ","

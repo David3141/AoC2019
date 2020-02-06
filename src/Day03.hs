@@ -7,6 +7,7 @@ where
 import Control.Monad (liftM2)
 import Data.Maybe (fromMaybe)
 import           Data.List                      ( foldl' )
+import           Data.List.Split                ( splitOn )
 import qualified Data.Set                      as Set
 import           Data.Set                       ( Set )
 import qualified Data.Sequence                 as Seq
@@ -18,7 +19,6 @@ import           Data.Sequence                  ( Seq
 import           Data.Foldable                  ( toList )
 
 import           Paths_advent_of_code
-import           Helpers                        ( readCommaSeparatedStrings )
 
 type PathInstruction = String -- direction and distance, like "R4" or "U12"
 type Node = (Int, Int)
@@ -55,7 +55,7 @@ readPaths = do
 
 
 parsePath :: String -> Path
-parsePath = pathFromInstructions . readCommaSeparatedStrings
+parsePath = pathFromInstructions . splitOn ","
 
 
 pathFromInstruction :: Node -> PathInstruction -> Path
