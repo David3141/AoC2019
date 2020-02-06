@@ -35,9 +35,10 @@ data OpCode = Addition
 data ParameterMode = Position | Immediate deriving Show
 
 type Operation = [(ParameterMode, Int)] -> IntCode -> IntCode
-type IndexOperation = [(ParameterMode, Int)] -> IntCode -> Int -> Int
+type IndexOperation = [(ParameterMode, Int)] -> IntCode -> Index -> Index
 type Output = [Int]
-type Input = Maybe Int
+type Input = [Int]
+type Index = Int
 
 
 toParamMode :: Int -> ParameterMode
@@ -58,7 +59,7 @@ toOpCode 99 = Halt
 
 
 run :: IntCode -> (IntCode, Output)
-run = execOpcodes Nothing 0 []
+run = execOpcodes 0 [] []
 
 
 runNounVerb :: Int -> Int -> IntCode -> (IntCode, Output)
@@ -66,30 +67,39 @@ runNounVerb noun verb = run . withNounAndVerb noun verb
 
 
 runWithInput :: Int -> IntCode -> (IntCode, Output)
-runWithInput inputVal = execOpcodes (Just inputVal) 0 []
+runWithInput inputVal = execOpcodes 0 (repeat inputVal) []
 
 
-execOpcodes :: Input -> Int -> Output -> IntCode -> (IntCode, Output)
-execOpcodes inputVal = execOpcodes'
+execOpcodes :: Index -> Input -> Output -> IntCode -> (IntCode, Output)
+execOpcodes = execOpcodes'
   where
-    operationFor' = operationFor inputVal
-
-    execOpcodes' :: Int -> Output -> IntCode -> (IntCode, Output)
-    execOpcodes' index outputList intCode
+    execOpcodes' :: Index -> Input -> Output -> IntCode -> (IntCode, Output)
+    execOpcodes' index inputList outputList intCode
         | opcode == Halt = (intCode, outputList)
-        | otherwise = execOpcodes' nextIndex updatedOutputList updatedIntCode
+        | otherwise = execOpcodes' nextIndex
+                                   updatedInputList
+                                   updatedOutputList
+                                   updatedIntCode
       where
-        (rawOpcode :<| args) = takeNAt 4 index intCode
-        (opcode, paramModes) = parseOpcode rawOpcode
-        paramsWithModes      = zip paramModes (toList args)
-        operation            = operationFor' opcode
-        nextIndex            = nextIndexFor opcode paramsWithModes intCode index
+        (opcode, paramsWithModes, nextIndex) = parseSliceAt index intCode
+        operation                            = operationFor inputList opcode
+        updatedIntCode                       = operation paramsWithModes intCode
 
-        updatedOutputList    = case opcode of
+        updatedOutputList                    = case opcode of
             Output -> updateOuput paramsWithModes intCode outputList
             _      -> outputList
+        updatedInputList = case opcode of
+            Input -> tail inputList
+            _     -> inputList
 
-        updatedIntCode = operation paramsWithModes intCode
+
+parseSliceAt :: Index -> IntCode -> (OpCode, [(ParameterMode, Int)], Int)
+parseSliceAt index intCode = (opcode, paramsWithModes, nextIndex)
+  where
+    (rawOpcode :<| args) = takeNAt 4 index intCode
+    (opcode, paramModes) = parseOpcode rawOpcode
+    paramsWithModes      = zip paramModes (toList args)
+    nextIndex            = nextIndexFor opcode paramsWithModes intCode index
 
 
 parseOpcode :: Int -> (OpCode, [ParameterMode])
@@ -115,8 +125,8 @@ updateWith basicOp [a, b, (_, targetIndex)] intCode = updateAt
 
 
 inputOp :: Input -> Operation
-inputOp Nothing         _                      = id
-inputOp (Just inputVal) ((_, targetIndex) : _) = updateAt targetIndex inputVal
+inputOp []             _                      = id
+inputOp (inputVal : _) ((_, targetIndex) : _) = updateAt targetIndex inputVal
 
 
 updateOuput :: [(ParameterMode, Int)] -> IntCode -> Output -> Output
