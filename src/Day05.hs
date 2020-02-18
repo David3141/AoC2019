@@ -15,13 +15,17 @@ import           Computer.IntCode               ( IntCode
 
 part1 :: IO Int
 part1 =
-    readDiagnosticCode . C.runWithInput 1 <$> readIntCode "inputs/day05.txt"
+    readDiagnosticCode . runWithSingleInput 1 <$> readIntCode "inputs/day05.txt"
 
 
 part2 :: IO Int
 part2 =
-    readDiagnosticCode . C.runWithInput 5 <$> readIntCode "inputs/day05.txt"
+    readDiagnosticCode . runWithSingleInput 5 <$> readIntCode "inputs/day05.txt"
 
 
-readDiagnosticCode :: (IntCode, [Int]) -> Int
-readDiagnosticCode = head . snd
+readDiagnosticCode :: [Int] -> Int
+readDiagnosticCode = head
+
+
+runWithSingleInput :: Int -> IntCode -> [Int]
+runWithSingleInput input = C.run (repeat input)

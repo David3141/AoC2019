@@ -17,18 +17,6 @@ part1 :: IO Int
 part1 = do
     intCode <- readIntCode "inputs/day07.txt"
 
-    -- let signals =
-    --         [ signal
-    --         | phaseSetting <- permutations [0, 1, 2, 3, 4]
-    --         , let
-    --             signal = foldl
-    --                 (\acc currPhase -> readOutput
-    --                     $ C.runWithInputs (currPhase : repeat acc) intCode
-    --                 )
-    --                 0
-    --                 phaseSetting
-    --         ]
-
     let signals =
             [ ampE
             | phaseSetting <- permutations [0, 1, 2, 3, 4]
@@ -43,8 +31,23 @@ part1 = do
 
 
 part2 :: IO Int
-part2 = return 12345
+part2 = return 500
+-- part2 = do
+--     intCode <- readIntCode "inputs/day07.txt"
+
+--     let signals =
+--             [ ampE
+--             | phaseSetting <- permutations [0, 1, 2, 3, 4]
+--             , let ampA = readOutput (head phaseSetting : repeat 0) intCode
+--             , let ampB = readOutput (phaseSetting !! 1 : repeat ampA) intCode
+--             , let ampC = readOutput (phaseSetting !! 2 : repeat ampB) intCode
+--             , let ampD = readOutput (phaseSetting !! 3 : repeat ampC) intCode
+--             , let ampE = readOutput (phaseSetting !! 4 : repeat ampD) intCode
+--             ]
+
+--     return $ maximum signals
+
 
 
 readOutput :: [Int] -> IntCode -> Int
-readOutput inputs intCode = head . snd $ C.runWithInputs inputs intCode
+readOutput inputs intCode = head $ C.run inputs intCode

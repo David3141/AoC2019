@@ -1,8 +1,6 @@
 module Computer.Computer
     ( run
-    , runWithInput
-    , runWithInputs
-    , runNounVerb
+    , runForIntCode
     )
 where
 
@@ -11,6 +9,7 @@ import qualified Data.Sequence                 as Seq
 import           Data.Sequence                  ( Seq
                                                 , Seq((:<|))
                                                 )
+import           Control.Monad.Trans.State
 
 import           Paths_advent_of_code
 import           Helpers                        ( readCommaSeparatedInts )
@@ -59,43 +58,34 @@ toOpCode 8  = Equals
 toOpCode 99 = Halt
 
 
-run :: IntCode -> (IntCode, Output)
-run = execOpcodes 0 [] []
+run :: Input -> IntCode -> Output
+run inputList intCode =
+    evalState (execOpcodes 0) (intCode, inputList, [])
 
 
-runNounVerb :: Int -> Int -> IntCode -> (IntCode, Output)
-runNounVerb noun verb = run . withNounAndVerb noun verb
+runForIntCode :: IntCode -> IntCode
+runForIntCode intCode = resultIntCode where
+    (resultIntCode, _, _) = execState (execOpcodes 0) (intCode, [], [])
 
 
-runWithInput :: Int -> IntCode -> (IntCode, Output)
-runWithInput inputVal = execOpcodes 0 (repeat inputVal) []
+execOpcodes :: Index -> State (IntCode, Input, Output) Output
+execOpcodes index = do
+    (intCode, inputList, outputList) <- get
 
+    let (opcode, paramsWithModes, nextIndex) = parseSliceAt index intCode
+    let operation                            = operationFor inputList opcode
+    let newIntCode                           = operation paramsWithModes intCode
 
-runWithInputs :: Input -> IntCode -> (IntCode, Output)
-runWithInputs inputs = execOpcodes 0 inputs []
-
-
-execOpcodes :: Index -> Input -> Output -> IntCode -> (IntCode, Output)
-execOpcodes = execOpcodes'
-  where
-    execOpcodes' :: Index -> Input -> Output -> IntCode -> (IntCode, Output)
-    execOpcodes' index inputList outputList intCode
-        | opcode == Halt = (intCode, outputList)
-        | otherwise = execOpcodes' nextIndex
-                                   updatedInputList
-                                   updatedOutputList
-                                   updatedIntCode
-      where
-        (opcode, paramsWithModes, nextIndex) = parseSliceAt index intCode
-        operation                            = operationFor inputList opcode
-        updatedIntCode                       = operation paramsWithModes intCode
-
-        updatedOutputList                    = case opcode of
+    let newOutputList = case opcode of
             Output -> updateOuput paramsWithModes intCode outputList
             _      -> outputList
-        updatedInputList = case opcode of
+    let newInputList = case opcode of
             Input -> tail inputList
             _     -> inputList
+
+    put (newIntCode, newInputList, newOutputList)
+
+    if opcode == Halt then return newOutputList else execOpcodes nextIndex
 
 
 parseSliceAt :: Index -> IntCode -> (OpCode, [(ParameterMode, Int)], Int)
@@ -147,6 +137,7 @@ operationFor _        JumpIfTrue     = noOp
 operationFor _        JumpIfFalse    = noOp
 operationFor _        LessThan       = updateWith (boolOp (<))
 operationFor _        Equals         = updateWith (boolOp (==))
+operationFor _        _              = \_ intCode -> intCode
 
 
 nextIndexFor :: OpCode -> IndexOperation
