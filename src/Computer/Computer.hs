@@ -125,7 +125,7 @@ inputOp (inputVal : _) ((_, targetIndex) : _) = updateAt targetIndex inputVal
 
 
 updateOuput :: [(ParameterMode, Int)] -> IntCode -> Output -> Output
-updateOuput (param : _) intCode output = readParam intCode param : output
+updateOuput (param : _) intCode output = output ++ [readParam intCode param]
 
 
 operationFor :: Input -> OpCode -> Operation

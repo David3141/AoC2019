@@ -19,35 +19,34 @@ part1 = do
 
     let signals =
             [ ampE
-            | phaseSetting <- permutations [0, 1, 2, 3, 4]
-            , let ampA = readOutput (head phaseSetting : repeat 0) intCode
-            , let ampB = readOutput (phaseSetting !! 1 : repeat ampA) intCode
-            , let ampC = readOutput (phaseSetting !! 2 : repeat ampB) intCode
-            , let ampD = readOutput (phaseSetting !! 3 : repeat ampC) intCode
-            , let ampE = readOutput (phaseSetting !! 4 : repeat ampD) intCode
+            | [phase1, phase2, phase3, phase4, phase5] <- permutations [0 .. 4]
+            , let ampA = readOutput (phase1 : repeat 0) intCode
+            , let ampB = readOutput (phase2 : repeat ampA) intCode
+            , let ampC = readOutput (phase3 : repeat ampB) intCode
+            , let ampD = readOutput (phase4 : repeat ampC) intCode
+            , let ampE = readOutput (phase5 : repeat ampD) intCode
             ]
 
     return $ maximum signals
 
 
 part2 :: IO Int
-part2 = return 500
--- part2 = do
---     intCode <- readIntCode "inputs/day07.txt"
+part2 = do
+    intCode <- readIntCode "inputs/day07.txt"
 
---     let signals =
---             [ ampE
---             | phaseSetting <- permutations [0, 1, 2, 3, 4]
---             , let ampA = readOutput (head phaseSetting : repeat 0) intCode
---             , let ampB = readOutput (phaseSetting !! 1 : repeat ampA) intCode
---             , let ampC = readOutput (phaseSetting !! 2 : repeat ampB) intCode
---             , let ampD = readOutput (phaseSetting !! 3 : repeat ampC) intCode
---             , let ampE = readOutput (phaseSetting !! 4 : repeat ampD) intCode
---             ]
+    let signals =
+            [ last ampE
+            | [phase1, phase2, phase3, phase4, phase5] <- permutations [5 .. 9]
+            , let   ampA = C.run (phase1 : 0 : ampE) intCode
+                    ampB = C.run (phase2 : ampA) intCode
+                    ampC = C.run (phase3 : ampB) intCode
+                    ampD = C.run (phase4 : ampC) intCode
+                    ampE = C.run (phase5 : ampD) intCode
+            ]
 
---     return $ maximum signals
+    return $ maximum signals
 
 
 
 readOutput :: [Int] -> IntCode -> Int
-readOutput inputs intCode = head $ C.run inputs intCode
+readOutput inputs intCode = last $ C.run inputs intCode

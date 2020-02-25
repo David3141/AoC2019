@@ -24,7 +24,7 @@ part2 =
 
 
 readDiagnosticCode :: [Int] -> Int
-readDiagnosticCode = head
+readDiagnosticCode = last
 
 
 runWithSingleInput :: Int -> IntCode -> [Int]
