@@ -35,13 +35,13 @@ part2 = do
     intCode <- readIntCode "inputs/day07.txt"
 
     let signals =
-            [ last ampE
+            [ head ampE
             | [phase1, phase2, phase3, phase4, phase5] <- permutations [5 .. 9]
-            , let   ampA = C.run (phase1 : 0 : ampE) intCode
-                    ampB = C.run (phase2 : ampA) intCode
-                    ampC = C.run (phase3 : ampB) intCode
-                    ampD = C.run (phase4 : ampC) intCode
-                    ampE = C.run (phase5 : ampD) intCode
+            , let   ampA = C.run (phase1 : 0 : reverse ampE) intCode
+                    ampB = C.run (phase2 : reverse ampA) intCode
+                    ampC = C.run (phase3 : reverse ampB) intCode
+                    ampD = C.run (phase4 : reverse ampC) intCode
+                    ampE = C.run (phase5 : reverse ampD) intCode
             ]
 
     return $ maximum signals
@@ -49,4 +49,4 @@ part2 = do
 
 
 readOutput :: [Int] -> IntCode -> Int
-readOutput inputs intCode = last $ C.run inputs intCode
+readOutput inputs intCode = head $ C.run inputs intCode

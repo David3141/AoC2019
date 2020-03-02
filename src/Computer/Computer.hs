@@ -59,33 +59,69 @@ toOpCode 99 = Halt
 
 
 run :: Input -> IntCode -> Output
-run inputList intCode =
-    evalState (execOpcodes 0) (intCode, inputList, [])
+run inputList intCode = evalState (execOpcodes 0 inputList) (intCode, [])
 
 
 runForIntCode :: IntCode -> IntCode
-runForIntCode intCode = resultIntCode where
-    (resultIntCode, _, _) = execState (execOpcodes 0) (intCode, [], [])
+runForIntCode intCode = resultIntCode
+    where (resultIntCode, _) = execState (execOpcodes 0 []) (intCode, [])
 
 
-execOpcodes :: Index -> State (IntCode, Input, Output) Output
-execOpcodes index = do
-    (intCode, inputList, outputList) <- get
+execOpcodes :: Index -> Input -> State (IntCode, Output) Output
+execOpcodes index inputList = do
+    (intCode, outputList) <- get
 
     let (opcode, paramsWithModes, nextIndex) = parseSliceAt index intCode
-    let operation                            = operationFor inputList opcode
-    let newIntCode                           = operation paramsWithModes intCode
 
-    let newOutputList = case opcode of
-            Output -> updateOuput paramsWithModes intCode outputList
-            _      -> outputList
-    let newInputList = case opcode of
-            Input -> tail inputList
-            _     -> inputList
+    case opcode of
 
-    put (newIntCode, newInputList, newOutputList)
+        Addition -> do
+            put (updateWith (+) paramsWithModes intCode, outputList)
+            execOpcodes nextIndex inputList
 
-    if opcode == Halt then return newOutputList else execOpcodes nextIndex
+        Multiplication -> do
+            put (updateWith (*) paramsWithModes intCode, outputList)
+            execOpcodes nextIndex inputList
+
+        Input -> do
+            let (input : inputRest) = inputList
+
+            put (inputOp input paramsWithModes intCode, outputList)
+            execOpcodes nextIndex inputRest
+
+        Output -> do
+            put (intCode, updateOuput paramsWithModes intCode outputList)
+            execOpcodes nextIndex inputList
+
+        JumpIfTrue  -> execOpcodes nextIndex inputList
+
+        JumpIfFalse -> execOpcodes nextIndex inputList
+
+        LessThan    -> do
+            put (updateWith (boolOp (<)) paramsWithModes intCode, outputList)
+            execOpcodes nextIndex inputList
+
+        Equals -> do
+            put (updateWith (boolOp (==)) paramsWithModes intCode, outputList)
+            execOpcodes nextIndex inputList
+
+        Halt -> return outputList
+
+    -- let operation                            = operationFor input opcode
+    -- let newIntCode                           = operation paramsWithModes intCode
+
+    -- let newOutputList = case opcode of
+    --         Output -> updateOuput paramsWithModes intCode outputList
+    --         _      -> outputList
+    -- let newInputList = case opcode of
+    --         Input -> inputRest
+    --         _     -> input : inputRest
+
+    -- put (newIntCode, newOutputList)
+
+    -- if opcode == Halt
+    --     then return newOutputList
+    --     else execOpcodes nextIndex newInputList
 
 
 parseSliceAt :: Index -> IntCode -> (OpCode, [(ParameterMode, Int)], Int)
@@ -119,16 +155,15 @@ updateWith basicOp [a, b, (_, targetIndex)] intCode = updateAt
     b' = readParam intCode b
 
 
-inputOp :: Input -> Operation
-inputOp []             _                      = id
-inputOp (inputVal : _) ((_, targetIndex) : _) = updateAt targetIndex inputVal
+inputOp :: Int -> Operation
+inputOp inputVal ((_, targetIndex) : _) = updateAt targetIndex inputVal
 
 
 updateOuput :: [(ParameterMode, Int)] -> IntCode -> Output -> Output
-updateOuput (param : _) intCode output = output ++ [readParam intCode param]
+updateOuput (param : _) intCode output = readParam intCode param : output
 
 
-operationFor :: Input -> OpCode -> Operation
+operationFor :: Int -> OpCode -> Operation
 operationFor _        Addition       = updateWith (+)
 operationFor _        Multiplication = updateWith (*)
 operationFor inputVal Input          = inputOp inputVal
