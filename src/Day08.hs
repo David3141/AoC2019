@@ -4,43 +4,61 @@ module Day08
     )
 where
 
-import           Data.List                      ( minimumBy )
+import           Data.List                      ( foldl1'
+                                                , minimumBy
+                                                )
 import           Data.Ord                       ( comparing )
 import           Data.List.Split                ( chunksOf )
-import Control.Monad (join)
+import           Control.Monad                  ( join
+                                                , forM_
+                                                )
 
 import           Paths_advent_of_code
 
-
-type Layer = [[Int]]
 
 part1 :: IO Int
 part1 = do
     layers <- parseImages
 
-    let digits = join . minLayer $ layers
-    let ones = countElem 1 digits
-    let twos = countElem 2 digits
+    let digits = fewestZeros layers
+    let ones   = countElem '1' digits
+    let twos   = countElem '2' digits
 
     return $ ones * twos
 
 
-part2 :: IO Int
-part2 = return 0
+part2 :: IO String
+part2 = do
+    colorRows <-
+        chunksOf 25 . map toColor . foldl1' getTopColors <$> parseImages
+
+    putStrLn ""
+    forM_ colorRows putStrLn
+    return "see image ^"
 
 
-minLayer :: [Layer] -> Layer
-minLayer = minimumBy (comparing countZerosInRows)
-  where
-    countZerosInRows = sum . map (countElem 0)
-
-
-parseImages :: IO [[[Int]]]
+parseImages :: IO [String]
 parseImages = do
     (line : _) <- lines <$> (readFile =<< getDataFileName "inputs/day08.txt")
 
-    return $ chunksOf 6 . chunksOf 25 . map (read . pure) $ line
+    return $ chunksOf (25 * 6) line
+
+
+fewestZeros :: [String] -> String
+fewestZeros = minimumBy (comparing (countElem '0'))
 
 
 countElem :: Eq a => a -> [a] -> Int
 countElem x = length . filter (== x)
+
+
+getTopColors :: String -> String -> String
+getTopColors ""       _        = ""
+getTopColors _        ""       = ""
+getTopColors (x : xs) (y : ys) = topColor : getTopColors xs ys
+    where topColor = if x == '2' then y else x
+
+
+toColor :: Char -> Char
+toColor '0' = '█'
+toColor _ = ' '
