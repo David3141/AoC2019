@@ -21,7 +21,7 @@ import           Computer.IntCode               ( IntCode
                                                 )
 
 
-data OpCode = Addition
+data Opcode = Addition
             | Multiplication
             | Input
             | Output
@@ -47,16 +47,16 @@ toParamMode 0 = Position
 toParamMode 1 = Immediate
 
 
-toOpCode :: Int -> OpCode
-toOpCode 1  = Addition
-toOpCode 2  = Multiplication
-toOpCode 3  = Input
-toOpCode 4  = Output
-toOpCode 5  = JumpIfTrue
-toOpCode 6  = JumpIfFalse
-toOpCode 7  = LessThan
-toOpCode 8  = Equals
-toOpCode 99 = Halt
+toOpcode :: Int -> Opcode
+toOpcode 1  = Addition
+toOpcode 2  = Multiplication
+toOpcode 3  = Input
+toOpcode 4  = Output
+toOpcode 5  = JumpIfTrue
+toOpcode 6  = JumpIfFalse
+toOpcode 7  = LessThan
+toOpcode 8  = Equals
+toOpcode 99 = Halt
 
 
 run :: Input -> IntCode -> Output
@@ -70,7 +70,18 @@ runForIntCode intCode = resultIntCode
 
 execOpcodes :: Index -> Input -> ComputerState Output
 execOpcodes index inputList = do
+    (opcode, nextIndex) <- execOpcodeAt index inputList
+
+    case opcode of
+        Halt  -> snd <$> get
+        Input -> execOpcodes nextIndex (tail inputList)
+        _     -> execOpcodes nextIndex inputList
+
+
+execOpcodeAt :: Index -> Input -> ComputerState (Opcode, Index)
+execOpcodeAt index inputList = do
     (opcode, paramsWithModes) <- parseSliceAt index
+    nextIndex <- nextIndexFor opcode paramsWithModes index
 
     case opcode of
         Addition       -> updateOpWith (+) paramsWithModes
@@ -81,15 +92,9 @@ execOpcodes index inputList = do
         Equals         -> updateOpWith (boolToInt (==)) paramsWithModes
         _              -> pure ()
 
-    nextIndex <- nextIndexFor opcode paramsWithModes index
+    pure (opcode, nextIndex)
 
-    case opcode of
-        Halt  -> snd <$> get
-        Input -> execOpcodes nextIndex (tail inputList)
-        _     -> execOpcodes nextIndex inputList
-
-
-parseSliceAt :: Index -> ComputerState (OpCode, [(ParameterMode, Int)])
+parseSliceAt :: Index -> ComputerState (Opcode, [(ParameterMode, Int)])
 parseSliceAt index = do
     (intCode, _) <- get
     let (rawOpcode :<| args) = takeNAt 4 index intCode
@@ -99,10 +104,10 @@ parseSliceAt index = do
     pure (opcode, paramsWithModes)
 
 
-parseOpcode :: Int -> (OpCode, [ParameterMode])
+parseOpcode :: Int -> (Opcode, [ParameterMode])
 parseOpcode num = (opCode, paramModes)
   where
-    opCode     = toOpCode (num `rem` 100)
+    opCode     = toOpcode (num `rem` 100)
     paramModes = map
         toParamMode
         [ num `div` 100 `rem` 10
@@ -137,7 +142,7 @@ writeOutput (param : _) = do
     put (intCode, readParam intCode param : outputList)
 
 
-nextIndexFor :: OpCode -> IndexOperation
+nextIndexFor :: Opcode -> IndexOperation
 nextIndexFor Addition       = increaseBy 4
 nextIndexFor Multiplication = increaseBy 4
 nextIndexFor Input          = increaseBy 2
