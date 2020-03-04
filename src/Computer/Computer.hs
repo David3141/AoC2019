@@ -34,8 +34,9 @@ data OpCode = Addition
 
 data ParameterMode = Position | Immediate deriving Show
 
-type Operation = [(ParameterMode, Int)] -> IntCode -> IntCode
-type IndexOperation = [(ParameterMode, Int)] -> IntCode -> Index -> Index
+type ComputerState = State (IntCode, Output)
+type Operation = [(ParameterMode, Int)] -> ComputerState ()
+type IndexOperation = [(ParameterMode, Int)] -> Index -> ComputerState Index
 type Output = [Int]
 type Input = [Int]
 type Index = Int
@@ -67,70 +68,35 @@ runForIntCode intCode = resultIntCode
     where (resultIntCode, _) = execState (execOpcodes 0 []) (intCode, [])
 
 
-execOpcodes :: Index -> Input -> State (IntCode, Output) Output
+execOpcodes :: Index -> Input -> ComputerState Output
 execOpcodes index inputList = do
-    (intCode, outputList) <- get
-
-    let (opcode, paramsWithModes, nextIndex) = parseSliceAt index intCode
+    (opcode, paramsWithModes) <- parseSliceAt index
 
     case opcode of
+        Addition       -> updateOpWith (+) paramsWithModes
+        Multiplication -> updateOpWith (*) paramsWithModes
+        Input          -> inputOp (head inputList) paramsWithModes
+        Output         -> writeOutput paramsWithModes
+        LessThan       -> updateOpWith (boolToInt (<)) paramsWithModes
+        Equals         -> updateOpWith (boolToInt (==)) paramsWithModes
+        _              -> pure ()
 
-        Addition -> do
-            put (updateWith (+) paramsWithModes intCode, outputList)
-            execOpcodes nextIndex inputList
+    nextIndex <- nextIndexFor opcode paramsWithModes index
 
-        Multiplication -> do
-            put (updateWith (*) paramsWithModes intCode, outputList)
-            execOpcodes nextIndex inputList
-
-        Input -> do
-            let (input : inputRest) = inputList
-
-            put (inputOp input paramsWithModes intCode, outputList)
-            execOpcodes nextIndex inputRest
-
-        Output -> do
-            put (intCode, updateOuput paramsWithModes intCode outputList)
-            execOpcodes nextIndex inputList
-
-        JumpIfTrue  -> execOpcodes nextIndex inputList
-
-        JumpIfFalse -> execOpcodes nextIndex inputList
-
-        LessThan    -> do
-            put (updateWith (boolOp (<)) paramsWithModes intCode, outputList)
-            execOpcodes nextIndex inputList
-
-        Equals -> do
-            put (updateWith (boolOp (==)) paramsWithModes intCode, outputList)
-            execOpcodes nextIndex inputList
-
-        Halt -> return outputList
-
-    -- let operation                            = operationFor input opcode
-    -- let newIntCode                           = operation paramsWithModes intCode
-
-    -- let newOutputList = case opcode of
-    --         Output -> updateOuput paramsWithModes intCode outputList
-    --         _      -> outputList
-    -- let newInputList = case opcode of
-    --         Input -> inputRest
-    --         _     -> input : inputRest
-
-    -- put (newIntCode, newOutputList)
-
-    -- if opcode == Halt
-    --     then return newOutputList
-    --     else execOpcodes nextIndex newInputList
+    case opcode of
+        Halt  -> snd <$> get
+        Input -> execOpcodes nextIndex (tail inputList)
+        _     -> execOpcodes nextIndex inputList
 
 
-parseSliceAt :: Index -> IntCode -> (OpCode, [(ParameterMode, Int)], Int)
-parseSliceAt index intCode = (opcode, paramsWithModes, nextIndex)
-  where
-    (rawOpcode :<| args) = takeNAt 4 index intCode
-    (opcode, paramModes) = parseOpcode rawOpcode
-    paramsWithModes      = zip paramModes (toList args)
-    nextIndex            = nextIndexFor opcode paramsWithModes intCode index
+parseSliceAt :: Index -> ComputerState (OpCode, [(ParameterMode, Int)])
+parseSliceAt index = do
+    (intCode, _) <- get
+    let (rawOpcode :<| args) = takeNAt 4 index intCode
+    let (opcode, paramModes) = parseOpcode rawOpcode
+    let paramsWithModes      = zip paramModes (toList args)
+
+    pure (opcode, paramsWithModes)
 
 
 parseOpcode :: Int -> (OpCode, [ParameterMode])
@@ -145,34 +111,30 @@ parseOpcode num = (opCode, paramModes)
         ]
 
 
-updateWith :: (Int -> Int -> Int) -> Operation
-updateWith basicOp [a, b, (_, targetIndex)] intCode = updateAt
-    targetIndex
-    (basicOp a' b')
-    intCode
-  where
-    a' = readParam intCode a
-    b' = readParam intCode b
+updateOpWith :: (Int -> Int -> Int) -> Operation
+updateOpWith basicOp [a, b, (_, targetIndex)] = do
+    (intCode, outputList) <- get
+    let a'         = readParam intCode a
+    let b'         = readParam intCode b
+    let newIntCode = updateAt targetIndex (basicOp a' b') intCode
+
+    put (newIntCode, outputList)
+
+
+boolToInt :: (Int -> Int -> Bool) -> Int -> Int -> Int
+boolToInt comparator a b = if comparator a b then 1 else 0
 
 
 inputOp :: Int -> Operation
-inputOp inputVal ((_, targetIndex) : _) = updateAt targetIndex inputVal
+inputOp inputVal ((_, targetIndex) : _) = do
+    (intCode, outputList) <- get
+    put (updateAt targetIndex inputVal intCode, outputList)
 
 
-updateOuput :: [(ParameterMode, Int)] -> IntCode -> Output -> Output
-updateOuput (param : _) intCode output = readParam intCode param : output
-
-
-operationFor :: Int -> OpCode -> Operation
-operationFor _        Addition       = updateWith (+)
-operationFor _        Multiplication = updateWith (*)
-operationFor inputVal Input          = inputOp inputVal
-operationFor _        Output         = noOp
-operationFor _        JumpIfTrue     = noOp
-operationFor _        JumpIfFalse    = noOp
-operationFor _        LessThan       = updateWith (boolOp (<))
-operationFor _        Equals         = updateWith (boolOp (==))
-operationFor _        _              = \_ intCode -> intCode
+writeOutput :: Operation
+writeOutput (param : _) = do
+    (intCode, outputList) <- get
+    put (intCode, readParam intCode param : outputList)
 
 
 nextIndexFor :: OpCode -> IndexOperation
@@ -184,25 +146,20 @@ nextIndexFor LessThan       = increaseBy 4
 nextIndexFor Equals         = increaseBy 4
 nextIndexFor JumpIfTrue     = jumpIf (/= 0)
 nextIndexFor JumpIfFalse    = jumpIf (== 0)
-
-
-noOp :: Operation
-noOp _ intCode = intCode
-
-
-boolOp :: (Int -> Int -> Bool) -> Int -> Int -> Int
-boolOp comparator a b = if comparator a b then 1 else 0
+nextIndexFor _              = \_ index -> pure index
 
 
 jumpIf :: (Int -> Bool) -> IndexOperation
-jumpIf condition (param : param2 : _) intCode index =
+jumpIf condition (param : param2 : _) index = do
+    (intCode, _) <- get
+
     if condition (readParam intCode param)
-        then readParam intCode param2
-        else index + 3
+        then pure $ readParam intCode param2
+        else pure $ index + 3
 
 
 increaseBy :: Int -> IndexOperation
-increaseBy num _ _ index = index + num
+increaseBy num _ index = pure $ index + num
 
 
 readParam :: IntCode -> (ParameterMode, Int) -> Int
