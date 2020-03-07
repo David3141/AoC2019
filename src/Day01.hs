@@ -1,7 +1,7 @@
 module Day01
-  ( part1
-  , part2
-  )
+    ( part1
+    , part2
+    )
 where
 
 import           Helpers                        ( readInts )

@@ -26,8 +26,7 @@ part2 :: IO Int
 part2 = do
     intCode <- readIntCode "inputs/day02.txt"
 
-    let
-        (noun, verb) = head
+    let (noun, verb) = head
             [ (noun, verb)
             | noun <- [0 .. 99]
             , verb <- [0 .. 99]
@@ -39,5 +38,4 @@ part2 = do
 
 
 runNounVerb :: Int -> Int -> IntCode -> Int
-runNounVerb noun verb =
-    (`at` 0) . C.runForIntCode . withNounAndVerb noun verb
+runNounVerb noun verb = (`at` 0) . C.runForIntCode . withNounAndVerb noun verb

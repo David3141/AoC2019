@@ -1,11 +1,11 @@
 module Computer.IntCode
-  ( IntCode
-  , at
-  , readIntCode
-  , takeNAt
-  , updateAt
-  , withNounAndVerb
-  )
+    ( IntCode
+    , at
+    , readIntCode
+    , takeNAt
+    , updateAt
+    , withNounAndVerb
+    )
 where
 
 import qualified Data.Sequence                 as Seq
@@ -19,9 +19,9 @@ type IntCode = Seq Int
 
 readIntCode :: FilePath -> IO IntCode
 readIntCode filePath =
-  Seq.fromList
-    .   readCommaSeparatedInts
-    <$> (readFile =<< getDataFileName filePath)
+    Seq.fromList
+        .   readCommaSeparatedInts
+        <$> (readFile =<< getDataFileName filePath)
 
 
 withNounAndVerb :: Int -> Int -> IntCode -> IntCode

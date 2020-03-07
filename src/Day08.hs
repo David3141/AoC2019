@@ -61,4 +61,4 @@ getTopColors (x : xs) (y : ys) = topColor : getTopColors xs ys
 
 toColor :: Char -> Char
 toColor '0' = '█'
-toColor _ = ' '
+toColor _   = ' '

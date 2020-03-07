@@ -57,10 +57,9 @@ ancestorsOf node tree = case ancestorOf node of
     Nothing       -> []
   where
     ancestorOf :: Node -> Maybe Node
-    ancestorOf node =
-        case take 1 . Map.keys . Map.filter (elem node) $ tree of
-            []      -> Nothing
-            (x : _) -> Just x
+    ancestorOf node = case take 1 . Map.keys . Map.filter (elem node) $ tree of
+        []      -> Nothing
+        (x : _) -> Just x
 
 
 sumLevelsAfterLastCommonAncestor :: [Node] -> [Node] -> Int

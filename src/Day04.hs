@@ -1,7 +1,7 @@
 module Day04
-  ( part1
-  , part2
-  )
+    ( part1
+    , part2
+    )
 where
 
 import           Paths_advent_of_code
@@ -18,10 +18,12 @@ part2 = length . filter (matchesPasswordConditionExact . show) <$> readRange
 
 readRange :: IO [Int]
 readRange = do
-  [start, end] <-
-    map read . splitOn "-" <$> (readFile =<< getDataFileName "inputs/day04.txt")
+    [start, end] <-
+        map read
+        .   splitOn "-"
+        <$> (readFile =<< getDataFileName "inputs/day04.txt")
 
-  return [start .. end]
+    return [start .. end]
 
 
 -- Not the most readable, I know, but I wanna learn/get used to applicatives.

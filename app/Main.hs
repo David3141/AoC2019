@@ -15,9 +15,9 @@ import           Day08
 
 main :: IO ()
 main = do
-  daysToRun <- map read <$> getArgs
+    daysToRun <- map read <$> getArgs
 
-  mapM_ run daysToRun
+    mapM_ run daysToRun
 
 run :: Int -> IO ()
 run 1 = runPretty 1 (Day01.part1, Day01.part2)
@@ -31,12 +31,12 @@ run 8 = runPretty 8 (Day08.part1, Day08.part2)
 
 runPretty :: (Show a, Show b) => Int -> (IO a, IO b) -> IO ()
 runPretty day (part1, part2) = do
-  putStrLn $ "--- Day " ++ show day ++ " ---"
+    putStrLn $ "--- Day " ++ show day ++ " ---"
 
-  putStr "Part 1:     "
-  timeIt (print =<< part1)
+    putStr "Part 1:     "
+    timeIt (print =<< part1)
 
-  putStr "\nPart 2:     "
-  timeIt (print =<< part2)
+    putStr "\nPart 2:     "
+    timeIt (print =<< part2)
 
-  putStrLn ""
+    putStrLn ""
