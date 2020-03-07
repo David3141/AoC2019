@@ -81,16 +81,18 @@ execOpcodes index inputList = do
 execOpcodeAt :: Index -> Input -> ComputerState (Opcode, Index)
 execOpcodeAt index inputList = do
     (opcode, paramsWithModes) <- parseSliceAt index
-    nextIndex <- nextIndexFor opcode paramsWithModes index
+    nextIndex                 <- nextIndexFor opcode paramsWithModes index
 
-    case opcode of
-        Addition       -> updateOpWith (+) paramsWithModes
-        Multiplication -> updateOpWith (*) paramsWithModes
-        Input          -> inputOp (head inputList) paramsWithModes
-        Output         -> writeOutput paramsWithModes
-        LessThan       -> updateOpWith (boolToInt (<)) paramsWithModes
-        Equals         -> updateOpWith (boolToInt (==)) paramsWithModes
-        _              -> pure ()
+    let execOpCode = case opcode of
+            Addition       -> updateOpWith (+)
+            Multiplication -> updateOpWith (*)
+            LessThan       -> updateOpWith (boolToInt (<))
+            Equals         -> updateOpWith (boolToInt (==))
+            Input          -> inputOp (head inputList)
+            Output         -> writeOutput
+            _              -> const $ pure ()
+
+    execOpCode paramsWithModes
 
     pure (opcode, nextIndex)
 
